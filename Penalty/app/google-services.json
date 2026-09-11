@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "626037076372",
+    "project_id": "penal-ty",
+    "storage_bucket": "penal-ty.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:626037076372:android:18ea466d895d6bae8a9f81",
+        "android_client_info": {
+          "package_name": "com.penalty.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWaSW5CWRmLtlrGRGGR_50NdXyoMeOiEM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

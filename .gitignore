@@ -1,0 +1,87 @@
+# =====================================
+# PYTHON
+# =====================================
+
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Entornos virtuales
+venv/
+env/
+.venv/
+
+# Variables de entorno
+.env
+.env.*
+
+
+# =====================================
+# SECRETOS / CREDENCIALES
+# =====================================
+
+# Firebase Admin SDK / Service Accounts
+*-firebase-adminsdk-*.json
+*service-account*.json
+serviceAccountKey.json
+
+# Claves privadas
+*.pem
+*.key
+*.p12
+
+# Archivos locales con secretos
+secrets.json
+credentials.json
+
+
+# =====================================
+# ANDROID / GRADLE
+# =====================================
+
+# Gradle generado
+.gradle/
+
+# Builds generados
+build/
+**/build/
+
+# Android Studio
+.idea/
+*.iml
+
+# Configuración local del SDK
+local.properties
+
+# Native builds
+.externalNativeBuild/
+.cxx/
+
+# Capturas
+captures/
+
+
+# =====================================
+# FIRMA DE APK / APP
+# =====================================
+
+*.jks
+*.keystore
+
+
+# =====================================
+# LOGS / TEMPORALES
+# =====================================
+
+*.log
+*.tmp
+*.temp
+
+
+# =====================================
+# SISTEMA OPERATIVO
+# =====================================
+
+.DS_Store
+Thumbs.db
+desktop.ini

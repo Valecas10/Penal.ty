@@ -1,0 +1,30 @@
+[
+    {
+        "id": "401915443",
+        "league": "Test Champions League",
+        "league_id": "uefa.champions",
+        "name": "Bodo/Glimt at Bayern Munich",
+        "date": "2026-09-10T19:00Z"
+    },
+    {
+        "id": "401915441",
+        "league": "Test Champions League",
+        "league_id": "uefa.champions",
+        "name": "RB Leipzig at Como",
+        "date": "2026-09-10T19:00Z"
+    },
+    {
+        "id": "401915442",
+        "league": "Test Champions League",
+        "league_id": "uefa.champions",
+        "name": "Sabah FK at Manchester United",
+        "date": "2026-09-10T19:00Z"
+    },
+    {
+        "id": "401915440",
+        "league": "Test Champions League",
+        "league_id": "uefa.champions",
+        "name": "Lens at Slavia Prague",
+        "date": "2026-09-10T19:00Z"
+    }
+]
