@@ -29,7 +29,7 @@ def main():
     print("\n⚽ PENAL.TY — LAUNCHER")
     print("=" * 50)
 
-    with open("matches_test.json", "r", encoding="utf-8") as file:
+    with open("matches.json", "r", encoding="utf-8") as file:
         matches = json.load(file)
 
     launched_matches = set()
