@@ -138,12 +138,26 @@ def main():
 
                     print("\n🔥 ¡PENALES DETECTADOS!")
 
-                    send_penalty_notification(
-                        "⚽ PENAL.TY",
-                        f"🔥 ¡{team1} vs {team2} VA A PENALES!"
-                    )
+                    topic_map = {
+                        "Liga Argentina": "liga_argentina",
+                        "Copa Argentina": "copa_argentina",
+                        "Libertadores": "libertadores",
+                        "Sudamericana": "sudamericana",
+                    }
 
-                    notification_sent = True
+                    topic = topic_map.get(match["league"])
+
+                    if topic:
+                        send_penalty_notification(
+                            "⚽ PENAL.TY",
+                            f"🔥 ¡{team1} vs {team2} VA A PENALES!",
+                            topic
+                        )
+
+                        notification_sent = True
+
+                    else:
+                        print(f"❌ No existe topic para: {match['league']}")
 
             # 🏁 Partido terminado
             if status.get("completed") is True:
