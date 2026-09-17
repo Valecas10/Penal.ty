@@ -8,6 +8,15 @@ def is_shootout(summary):
         if play.get("shootout") is True:
             return True
 
+    try:
+        status = summary["header"]["competitions"][0]["status"]
+
+        if status.get("name") == "STATUS_SHOOTOUT":
+            return True
+
+    except (KeyError, IndexError):
+        pass
+
     return False
 
 

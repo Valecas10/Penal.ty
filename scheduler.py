@@ -1,12 +1,14 @@
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 LEAGUES = {
     "Copa Argentina": "arg.copa",
     "Libertadores": "conmebol.libertadores",
     "Sudamericana": "conmebol.sudamericana",
 }
+
+ARGENTINA_TZ = timezone(timedelta(hours=-3))
 
 
 def get_matches(league_id):
@@ -45,6 +47,29 @@ def can_go_to_penalties(league_name, competition):
     return False
 
 
+def is_today_in_argentina(date_string):
+
+    match_date = datetime.fromisoformat(
+        date_string.replace("Z", "+00:00")
+    )
+
+    argentina_date = match_date.astimezone(ARGENTINA_TZ).date()
+    today = datetime.now(ARGENTINA_TZ).date()
+
+    return argentina_date == today
+
+
+def is_finished(event):
+
+    try:
+        status = event["competitions"][0]["status"]["type"]
+
+        return status.get("completed") is True
+
+    except (KeyError, IndexError):
+        return False
+
+
 print("\n⚽ PENAL.TY — SCHEDULER")
 print("=" * 50)
 
@@ -57,9 +82,21 @@ for league_name, league_id in LEAGUES.items():
 
         for event in events:
 
+            # 🗓️ Solo partidos de HOY
+            if not is_today_in_argentina(event["date"]):
+                continue
+
+            # 🏁 Nunca guardar partidos ya terminados
+            if is_finished(event):
+                continue
+
             competition = event.get("competitions", [{}])[0]
 
-            if not can_go_to_penalties(league_name, competition):
+            # 🎯 Solo partidos que pueden llegar a penales
+            if not can_go_to_penalties(
+                league_name,
+                competition
+            ):
                 continue
 
             matches_to_monitor.append({
@@ -86,7 +123,7 @@ with open("matches.json", "w", encoding="utf-8") as f:
 
 if not matches_to_monitor:
 
-    print("\nNo hay partidos próximos que puedan ir a penales.")
+    print("\nNo hay partidos de hoy que puedan ir a penales.")
 
 else:
 
@@ -100,7 +137,7 @@ else:
 
         print(f"🏆 {match['league']}")
         print(f"⚽ {match['name']}")
-        print(f"📅 {date}")
+        print(f"📅 {date.astimezone(ARGENTINA_TZ)}")
         print(f"🆔 {match['id']}")
         print("-" * 50)
 

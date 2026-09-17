@@ -26,6 +26,6 @@ if __name__ == "__main__":
 
     send_penalty_notification(
         "⚽ PENAL.TY",
-        "🔥 ¡Un partido va a penales!",
+        "🔥 ¡Un partido va a penales prueba!",
         "copa_argentina"
     )

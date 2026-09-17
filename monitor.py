@@ -56,6 +56,8 @@ def is_cancelled_or_suspended(status):
         for word in invalid_statuses
     )
 
+    
+
 
 def get_interval(status):
 
@@ -63,8 +65,7 @@ def get_interval(status):
     detail = status.get("detail", "")
     name = status.get("name", "")
 
-    # ⚽ Si estamos en tiempo añadido
-    # Ej: 90'+1'
+    # ⚽ Tiempo añadido
     if "90'" in short_detail:
         return 60
 
@@ -76,7 +77,7 @@ def get_interval(status):
     ):
         return 60
 
-    # 🔢 Minutos normales: 83', 72', etc.
+    # 🔢 Minutos normales
     try:
         minute_text = short_detail.replace("'", "").strip()
 
@@ -89,8 +90,59 @@ def get_interval(status):
     except Exception:
         pass
 
-    # 🕐 Todo lo anterior al minuto 80
+    if "pens" in short_detail.lower():
+        return 60
+
+    # 🕐 Antes del minuto 80
     return 600
+
+
+def get_shootout_state(summary):
+
+    shootout = summary.get("shootout", [])
+
+    state = []
+
+    for team in shootout:
+
+        shots = []
+
+        for shot in team.get("shots", []):
+
+            shots.append({
+                "shotNumber": shot.get("shotNumber"),
+                "didScore": shot.get("didScore")
+            })
+
+        state.append({
+            "team": team.get("team"),
+            "shots": shots
+        })
+
+    return state
+
+
+def format_shootout(state):
+
+    lines = []
+
+    for team in state:
+
+        team_name = team["team"]
+        symbols = []
+
+        for shot in team["shots"]:
+
+            if shot["didScore"]:
+                symbols.append("O")
+            else:
+                symbols.append("X")
+
+        lines.append(
+            f"{team_name}: {' '.join(symbols)}"
+        )
+
+    return "\n".join(lines)
 
 
 def main():
@@ -109,6 +161,9 @@ def main():
     print("=" * 50)
 
     notification_sent = False
+
+    # Estado de la tanda que ya vimos
+    previous_shootout_state = []
 
     while True:
 
@@ -134,6 +189,9 @@ def main():
             # 🔥 PENALTIES
             if is_shootout(summary):
 
+                current_shootout_state = get_shootout_state(summary)
+
+                # Primera detección de la tanda
                 if not notification_sent:
 
                     print("\n🔥 ¡PENALES DETECTADOS!")
@@ -157,7 +215,23 @@ def main():
                         notification_sent = True
 
                     else:
-                        print(f"❌ No existe topic para: {match['league']}")
+                        print(
+                            f"❌ No existe topic para: "
+                            f"{match['league']}"
+                        )
+
+                # 🥅 Detectar nuevos penales
+                if current_shootout_state != previous_shootout_state:
+
+                    print("\n🥅 ESTADO DE LA TANDA:")
+
+                    print(
+                        format_shootout(
+                            current_shootout_state
+                        )
+                    )
+
+                    previous_shootout_state = current_shootout_state
 
             # 🏁 Partido terminado
             if status.get("completed") is True:
