@@ -12,15 +12,34 @@ class PenaltyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
 
-        val title = remoteMessage.notification?.title ?: "⚽ PENAL.TY"
-        val body = remoteMessage.notification?.body ?: "¡Un partido fue a penales!"
+        val title = remoteMessage.data["title"]
+            ?: remoteMessage.notification?.title
+            ?: "PENAL.TY"
 
-        showNotification(title, body)
+        val body = remoteMessage.data["body"]
+            ?: remoteMessage.notification?.body
+            ?: "¡Un partido fue a penales!"
+
+        val type = remoteMessage.data["type"] ?: "alert"
+
+        showNotification(
+            title = title,
+            body = body,
+            isAlert = type == "alert"
+        )
     }
 
-    private fun showNotification(title: String, body: String) {
+    private fun showNotification(
+        title: String,
+        body: String,
+        isAlert: Boolean
+    ) {
 
-        val channelId = "penalties_channel"
+        val channelId = if (isAlert) {
+            "penalties_alert"
+        } else {
+            "penalties_update"
+        }
 
         val notificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE)
@@ -28,10 +47,16 @@ class PenaltyFirebaseMessagingService : FirebaseMessagingService() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 
+            val importance = if (isAlert) {
+                NotificationManager.IMPORTANCE_HIGH
+            } else {
+                NotificationManager.IMPORTANCE_LOW
+            }
+
             val channel = NotificationChannel(
                 channelId,
-                "Penales",
-                NotificationManager.IMPORTANCE_HIGH
+                if (isAlert) "Alertas de penales" else "Actualizaciones de penales",
+                importance
             )
 
             notificationManager.createNotificationChannel(channel)
@@ -41,8 +66,15 @@ class PenaltyFirebaseMessagingService : FirebaseMessagingService() {
             .setContentTitle(title)
             .setContentText(body)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
+            .setPriority(
+                if (isAlert) {
+                    NotificationCompat.PRIORITY_HIGH
+                } else {
+                    NotificationCompat.PRIORITY_LOW
+                }
+            )
+            .setAutoCancel(false)
+            .setOnlyAlertOnce(!isAlert)
             .build()
 
         notificationManager.notify(1, notification)

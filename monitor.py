@@ -8,7 +8,6 @@ from firebase_sender import send_penalty_notification
 
 
 def get_match_summary(match):
-
     url = (
         "https://site.api.espn.com/apis/site/v2/sports/"
         f"soccer/{match['league_id']}/summary?event={match['id']}"
@@ -21,7 +20,6 @@ def get_match_summary(match):
 
 
 def get_status(summary):
-
     try:
         return summary["header"]["competitions"][0]["status"]["type"]
     except (KeyError, IndexError):
@@ -29,7 +27,6 @@ def get_status(summary):
 
 
 def get_teams(summary):
-
     competition = summary["header"]["competitions"][0]
     teams = competition["competitors"]
 
@@ -40,7 +37,6 @@ def get_teams(summary):
 
 
 def is_cancelled_or_suspended(status):
-
     name = status.get("name", "").lower()
     detail = status.get("detail", "").lower()
 
@@ -56,28 +52,26 @@ def is_cancelled_or_suspended(status):
         for word in invalid_statuses
     )
 
-    
-
 
 def get_interval(status):
-
     short_detail = status.get("shortDetail", "")
     detail = status.get("detail", "")
     name = status.get("name", "")
+    description = status.get("description", "")
 
-    # ⚽ Tiempo añadido
+    if "pens" in short_detail.lower():
+        return 60
+
     if "90'" in short_detail:
         return 60
 
-    # ⏱️ Tiempo extra / alargue
     if (
         "extra" in detail.lower()
         or "extra" in name.lower()
-        or "extra" in status.get("description", "").lower()
+        or "extra" in description.lower()
     ):
         return 60
 
-    # 🔢 Minutos normales
     try:
         minute_text = short_detail.replace("'", "").strip()
 
@@ -90,25 +84,18 @@ def get_interval(status):
     except Exception:
         pass
 
-    if "pens" in short_detail.lower():
-        return 60
-
-    # 🕐 Antes del minuto 80
     return 600
 
 
 def get_shootout_state(summary):
-
-    shootout = summary.get("shootout", [])
+    shootout = summary.get("shootout") or []
 
     state = []
 
     for team in shootout:
-
         shots = []
 
         for shot in team.get("shots", []):
-
             shots.append({
                 "shotNumber": shot.get("shotNumber"),
                 "didScore": shot.get("didScore")
@@ -123,16 +110,14 @@ def get_shootout_state(summary):
 
 
 def format_shootout(state):
-
     lines = []
 
     for team in state:
-
         team_name = team["team"]
+
         symbols = []
 
         for shot in team["shots"]:
-
             if shot["didScore"]:
                 symbols.append("O")
             else:
@@ -145,9 +130,29 @@ def format_shootout(state):
     return "\n".join(lines)
 
 
+def format_shootout_notification(state):
+    parts = []
+
+    for team in state:
+        team_name = team["team"]
+
+        symbols = []
+
+        for shot in team["shots"]:
+            if shot["didScore"]:
+                symbols.append("O")
+            else:
+                symbols.append("X")
+
+        parts.append(
+            f"{team_name}: {' '.join(symbols)}"
+        )
+
+    return " | ".join(parts)
+
+
 def main():
 
-    # Recibir partido desde launcher.py
     if len(sys.argv) < 2:
         print("❌ No se recibió ningún partido.")
         return
@@ -161,9 +166,16 @@ def main():
     print("=" * 50)
 
     notification_sent = False
-
-    # Estado de la tanda que ya vimos
     previous_shootout_state = []
+
+    topic_map = {
+        "Liga Argentina": "liga_argentina",
+        "Copa Argentina": "copa_argentina",
+        "Libertadores": "libertadores",
+        "Sudamericana": "sudamericana",
+    }
+
+    topic = topic_map.get(match["league"])
 
     while True:
 
@@ -175,71 +187,107 @@ def main():
 
             team1, team2 = get_teams(summary)
 
-            print(f"\n⚽ {team1} vs {team2}")
+            print(
+                f"\n⚽ {team1} vs {team2}"
+            )
+
             print(
                 f"⏱️ {status.get('shortDetail', status.get('detail'))}"
             )
 
-            # ❌ Suspendido / cancelado / reprogramado
             if is_cancelled_or_suspended(status):
 
-                print("❌ Partido suspendido/cancelado/reprogramado.")
+                print(
+                    "❌ Partido suspendido/cancelado/reprogramado."
+                )
+
                 break
 
-            # 🔥 PENALTIES
             if is_shootout(summary):
 
                 current_shootout_state = get_shootout_state(summary)
 
-                # Primera detección de la tanda
+                # -----------------------------------------
+                # PRIMERA DETECCIÓN
+                # -----------------------------------------
+
                 if not notification_sent:
 
                     print("\n🔥 ¡PENALES DETECTADOS!")
 
-                    topic_map = {
-                        "Liga Argentina": "liga_argentina",
-                        "Copa Argentina": "copa_argentina",
-                        "Libertadores": "libertadores",
-                        "Sudamericana": "sudamericana",
-                    }
-
-                    topic = topic_map.get(match["league"])
-
                     if topic:
+
                         send_penalty_notification(
-                            "⚽ PENAL.TY",
-                            f"🔥 ¡{team1} vs {team2} VA A PENALES!",
-                            topic
+                            title="PENAL.TY",
+                            body=f"{team1} vs {team2} VAN A PENALES",
+                            topic=topic,
+                            notification_type="alert",
+                            match_id=match["id"]
                         )
 
                         notification_sent = True
 
                     else:
+
                         print(
-                            f"❌ No existe topic para: "
-                            f"{match['league']}"
+                            f"❌ No existe topic para: {match['league']}"
                         )
 
-                # 🥅 Detectar nuevos penales
+                # -----------------------------------------
+                # ACTUALIZACIONES DE LA TANDA
+                # -----------------------------------------
+
                 if current_shootout_state != previous_shootout_state:
 
-                    print("\n🥅 ESTADO DE LA TANDA:")
+                    if current_shootout_state:
 
-                    print(
-                        format_shootout(
+                        print("\n🥅 ESTADO DE LA TANDA:")
+                        print(
+                            format_shootout(
+                                current_shootout_state
+                            )
+                        )
+
+                        if (
+                            notification_sent
+                            and current_shootout_state
+                            != previous_shootout_state
+                        ):
+
+                            notification_body = (
+                                format_shootout_notification(
+                                    current_shootout_state
+                                )
+                            )
+
+                            if topic:
+
+                                send_penalty_notification(
+                                    title=f"{team1} vs {team2}",
+                                    body=notification_body,
+                                    topic=topic,
+                                    notification_type="update",
+                                    match_id=match["id"]
+                                )
+
+                        previous_shootout_state = (
                             current_shootout_state
                         )
-                    )
 
-                    previous_shootout_state = current_shootout_state
+            # -----------------------------------------
+            # PARTIDO TERMINADO
+            # -----------------------------------------
 
-            # 🏁 Partido terminado
             if status.get("completed") is True:
 
                 print("\n🏁 Partido finalizado.")
+
                 break
 
-            # ⏳ Próxima consulta
+            # -----------------------------------------
+            # PRÓXIMA CONSULTA
+            # -----------------------------------------
+
             interval = get_interval(status)
 
             print(
@@ -252,7 +300,10 @@ def main():
         except Exception as e:
 
             print(f"❌ Error: {e}")
-            print("⏳ Reintentando en 1 minuto...")
+
+            print(
+                "⏳ Reintentando en 1 minuto..."
+            )
 
             time.sleep(60)
 

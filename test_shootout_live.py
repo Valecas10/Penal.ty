@@ -1,5 +1,15 @@
 import time
 
+from firebase_sender import send_penalty_notification
+
+
+TOPIC = "copa_argentina"
+MATCH_ID = "test_live_123"
+
+TEAM1 = "Boca Juniors"
+TEAM2 = "Vélez Sarsfield"
+
+
 states = [
     {
         "Boca Juniors": ["O"],
@@ -39,19 +49,61 @@ states = [
     }
 ]
 
-previous_state = None
 
-for state in states:
+def format_state(state):
 
-    if state != previous_state:
+    boca = " ".join(state["Boca Juniors"])
+    velez = " ".join(state["Vélez Sarsfield"])
 
-        print("\n🥅 NUEVO ESTADO")
+    return f"Boca Juniors: {boca} | Vélez Sarsfield: {velez}"
 
-        for team, shots in state.items():
-            print(f"{team}: {' '.join(shots)}")
 
-        previous_state = state
+print("\n⚽ TEST DE TANDA EN VIVO")
+print("=" * 50)
 
-    time.sleep(2)
+
+# -------------------------------------------------
+# ALERTA INICIAL
+# -------------------------------------------------
+
+print("\n🚨 INICIANDO TANDA")
+
+send_penalty_notification(
+    title="PENAL.TY",
+    body=f"{TEAM1} vs {TEAM2} VAN A PENALES",
+    topic=TOPIC,
+    notification_type="alert",
+    match_id=MATCH_ID
+)
+
+print("🔔 Alerta inicial enviada.")
+
+time.sleep(5)
+
+
+# -------------------------------------------------
+# SIMULAR TIROS
+# -------------------------------------------------
+
+for index, state in enumerate(states):
+
+    body = format_state(state)
+
+    print(f"\n🥅 TIRO {index + 1}")
+    print(body)
+
+    send_penalty_notification(
+        title=f"{TEAM1} vs {TEAM2}",
+        body=body,
+        topic=TOPIC,
+        notification_type="update",
+        match_id=MATCH_ID
+    )
+
+    print("🔄 Actualización enviada.")
+
+    # Delay entre cada penal
+    time.sleep(5)
+
 
 print("\n🏁 TANDA FINALIZADA")
